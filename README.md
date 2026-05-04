@@ -45,6 +45,51 @@ YouTube · Vimeo · TikTok · Twitch · Instagram · SoundCloud · Dailymotion �
 | macOS | 13 Ventura or later |
 | Architecture | Apple Silicon & Intel (universal) |
 
+## Build with an AI agent
+
+Paste the following prompt into [Claude](https://claude.ai/claude-code) (or any AI coding agent) and it will set up and run PullTube from scratch on your Mac:
+
+---
+
+```
+You are setting up PullTube, a native macOS video downloader built with SwiftUI.
+
+Project overview:
+- Language: Swift 5.9, SwiftUI, macOS 13+
+- Build system: XcodeGen (generates PullTube.xcodeproj from project.yml)
+- Bundled binaries: yt-dlp (universal binary) + ffmpeg with dylib tree, all inside the app bundle
+- No App Store, no code signing required — uses ad-hoc signing (CODE_SIGN_IDENTITY: "-")
+
+Your job:
+1. Check that the following are installed: Xcode (15+), xcodegen, Homebrew, ffmpeg
+   - Install any missing tools: `brew install xcodegen ffmpeg`
+
+2. Run the dependency download script to bundle yt-dlp and ffmpeg into the project:
+   ./scripts/download-deps.sh
+   This script:
+   - Downloads the official yt-dlp universal binary from GitHub releases into Sources/PullTube/Resources/Vendored/
+   - Copies ffmpeg from Homebrew, recursively bundles all non-system dylibs into Vendored/lib/
+   - Rewrites dylib load paths to @executable_path/lib/ using install_name_tool
+
+3. Generate the Xcode project:
+   xcodegen generate
+
+4. Build the app from the command line:
+   xcodebuild -scheme PullTube -configuration Debug build
+
+5. Launch the built app:
+   open ~/Library/Developer/Xcode/DerivedData/PullTube-*/Build/Products/Debug/PullTube.app
+
+Known issues to watch for:
+- The post-build script copies Vendored/ using `ditto`, not `rsync` — rsync gets SIGKILL on iCloud Drive paths in Xcode's sandbox
+- ffmpeg dylibs must all have @executable_path/lib/ load paths or the app will crash on launch
+- If yt-dlp returns HTTP 403 on YouTube, enable "Use browser cookies" in Settings to use Safari's session
+
+Once the app launches: paste any YouTube, Vimeo, or TikTok URL into the input bar, pick a quality (4K if available), and tap Download.
+```
+
+---
+
 ## Building from source
 
 ```bash
